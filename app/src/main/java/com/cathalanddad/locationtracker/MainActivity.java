@@ -1,6 +1,7 @@
 package com.cathalanddad.locationtracker;
 
 import android.Manifest;
+import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.util.Log;
@@ -20,6 +21,7 @@ public class MainActivity extends AppCompatActivity {
     private TextView latitudeTextView;
     private TextView longitudeTextView;
     private ActivityMainBinding binding;
+    private Intent locationServiceIntent;
 
     private static final int LOCATION_PERMISSION_REQUEST_CODE = 1001;
     private static final String TAG = "MainActivity";
@@ -34,6 +36,8 @@ public class MainActivity extends AppCompatActivity {
         longitudeTextView = binding.longitudeTextView;
 
         locationViewModel = new ViewModelProvider(this).get(LocationViewModel.class);
+
+        locationServiceIntent = new Intent(this, LocationService.class);
 
         checkLocationPermission();
 
@@ -73,19 +77,20 @@ public class MainActivity extends AppCompatActivity {
                 // Permission granted, start location updates
                 startLocationUpdates();
             }
-        }
-        else{
+        } else {
             Log.w(TAG, "Could not request permission");
         }
     }
 
     private void startLocationUpdates() {
-        locationViewModel.startLocationUpdates(this);
+        //start service
+        startForegroundService(locationServiceIntent);
     }
 
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        locationViewModel.stopLocationUpdates();
+        //stop service
+        stopService(locationServiceIntent);
     }
 }

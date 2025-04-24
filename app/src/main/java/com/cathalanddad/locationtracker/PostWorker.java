@@ -7,7 +7,8 @@ import androidx.annotation.NonNull;
 import androidx.work.Worker;
 import androidx.work.WorkerParameters;
 
-import com.google.android.gms.common.api.Result;
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import java.io.IOException;
 
@@ -29,19 +30,37 @@ public class PostWorker extends Worker {
         Log.d(TAG, "post location data");
         double lat = getInputData().getDouble("lat", 0);
         double lon = getInputData().getDouble("lon", 0);
+        long timestamp = System.currentTimeMillis();
 
         OkHttpClient client = new OkHttpClient();
 
         MediaType mediaType = MediaType.parse("application/json");
-        RequestBody body = RequestBody.create(mediaType, "{\"lat\": " + lat + ", \"lon\": " + lon + "}");
+
+        // Create the JSON body using a JSONObject
+        JSONObject jsonBody = new JSONObject();
+        try {
+            // Convert latitude and longitude to strings
+            jsonBody.put("lat", String.valueOf(lat));
+            jsonBody.put("lon", String.valueOf(lon));
+            jsonBody.put("timestamp", timestamp);
+        } catch (JSONException e) {
+            Log.e(TAG, "Error creating JSON body: " + e.getMessage());
+            return Result.failure();
+        }
+
+        RequestBody body = RequestBody.create(mediaType, jsonBody.toString());
         Request request = new Request.Builder()
-                .url("http://httpbin.org/post")
+                .url("https://api.cathalanddad.com:8000/action/loc/") // Correct URL
                 .post(body)
-                .addHeader("content-type", "application/json")
+                .addHeader("Content-Type", "application/json") // Correct header
                 .build();
 
         try {
             Response response = client.newCall(request).execute();
+            if (!response.isSuccessful()) {
+                Log.e(TAG, "Error response code: " + response.code());
+                return Result.failure();
+            }
         } catch (IOException e) {
             Log.e(TAG, "Error sending data: " + e.getMessage());
             return Result.failure();
